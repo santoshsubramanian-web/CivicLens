@@ -82,6 +82,22 @@ export default function App() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-mono text-slate-400 mb-2">FIELD REPORT / TELEMETRY LOG</label>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setDescription("CRITICAL: High-voltage cable snapped and sparking on wet road at 45th Street.")}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
+                >
+                  + Preset: Power Hazard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDescription("MODERATE: Major pothole on Main Street causing traffic slowdown near civic center.")}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
+                >
+                  + Preset: Road Damage
+                </button>
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
