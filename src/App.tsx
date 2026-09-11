@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal } from 'lucide-react';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface TicketData {
@@ -51,15 +51,29 @@ export default function App() {
   const [ticket, setTicket] = useState<TicketData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [coords, setCoords] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude.toFixed(4);
         const lng = pos.coords.longitude.toFixed(4);
         setCoords(`Lat: ${lat}, Lng: ${lng}`);
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.display_name) {
+              setAddress(data.display_name);
+            }
+          }
+        } catch {
+          // fallback to raw coordinates if reverse geocoding is offline
+        }
       },
       () => setCoords(null)
     );
@@ -78,10 +92,11 @@ export default function App() {
     setError(null);
 
     const formData = new FormData();
-    const payloadDescription = coords
-      ? `${description}\n\n[ATTACHED GEOLOCATION: ${coords}]`
+    const geoTag = address || coords;
+    const payloadDescription = geoTag
+      ? `${description}\n\n[ATTACHED GEOLOCATION: ${geoTag}]`
       : description;
-    if (description || coords) formData.append("description", payloadDescription);
+    if (description || geoTag) formData.append("description", payloadDescription);
     if (file) formData.append("file", file);
 
     try {
@@ -113,22 +128,73 @@ export default function App() {
     }
   };
 
-  const handleExportDocx = async (ticket: TicketData, coords: string | null) => {
+  const handleExportDocx = async (ticket: TicketData, locationInfo: string | null) => {
     const doc = new Document({
       sections: [
         {
           properties: {},
           children: [
             new Paragraph({
-              text: "OFFICIAL 311 MUNICIPAL INCIDENT NOTIFICATION",
-              heading: HeadingLevel.TITLE,
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({ text: "CIVICLENS TELEMETRY COMMAND CENTER", bold: true, size: 32 }),
+              ],
             }),
             new Paragraph({
-              text: `Generated via CivicLens Telemetry Command Center | Date: ${new Date().toLocaleDateString()}`,
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({ text: "Official Municipal Incident Petition", italics: true, size: 24, color: "555555" }),
+              ],
             }),
             new Paragraph({ text: " " }),
 
-            new Paragraph({ text: "SECTION 1: INCIDENT TELEMETRY", heading: HeadingLevel.HEADING_1 }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Date: ", bold: true }),
+                new TextRun(new Date().toLocaleDateString()),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Ref Code: ", bold: true }),
+                new TextRun(`CIVICLENS-DISPATCH-${Math.floor(1000 + Math.random() * 9000)}`),
+              ],
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "To: ", bold: true }),
+                new TextRun("Office of Municipal Affairs & Emergency Dispatch"),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Department: ", bold: true }),
+                new TextRun("Public Works & Infrastructure Division"),
+              ],
+            }),
+            new Paragraph({
+              children: [new TextRun("City Administration Bureau")],
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: `SUBJECT: FORMAL NOTIFICATION AND ACTION REQUEST REGARDING ${ticket.issue_type.toUpperCase()} HAZARD AT ${(locationInfo || ticket.location_description).toUpperCase()}`, bold: true }),
+              ],
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph("To the Respected Municipal Officer / Emergency Dispatch Commander,"),
+            new Paragraph({ text: " " }),
+
+            new Paragraph(
+              "This is a formal notification of an urgent municipal hazard identified and verified via the CivicLens automated telemetry and dispatch system. The incident detailed below requires prompt assessment and corrective action by the responsible public works authority to ensure public safety and prevent further degradation of municipal infrastructure."
+            ),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({ text: "INCIDENT TELEMETRY", heading: HeadingLevel.HEADING_1 }),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               borders: {
@@ -140,57 +206,56 @@ export default function App() {
               rows: [
                 new TableRow({
                   children: [
-                    new TableCell({ children: [new Paragraph("Category")] }),
-                    new TableCell({ children: [new Paragraph(ticket.issue_type)] }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({ children: [new Paragraph("Severity Level")] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Severity", bold: true })] })] }),
                     new TableCell({ children: [new Paragraph(ticket.severity)] }),
                   ],
                 }),
                 new TableRow({
                   children: [
-                    new TableCell({ children: [new Paragraph("Target SLA")] }),
-                    new TableCell({ children: [new Paragraph(ticket.severity === 'CRITICAL' ? '< 30 MINS' : '< 4 HOURS')] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Category", bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph(ticket.issue_type)] }),
                   ],
                 }),
                 new TableRow({
                   children: [
-                    new TableCell({ children: [new Paragraph("GPS Coordinates")] }),
-                    new TableCell({ children: [new Paragraph(coords || "NOT ACQUIRED")] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Address / Location", bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph(locationInfo || ticket.location_description || "NOT ACQUIRED")] }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Target SLA", bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph(ticket.severity === 'CRITICAL' ? '< 30 MINS' : '< 4 HOURS')] }),
                   ],
                 }),
               ],
             }),
             new Paragraph({ text: " " }),
 
-            new Paragraph({ text: "SECTION 2: INCIDENT SUMMARY & ACTION PLAN", heading: HeadingLevel.HEADING_1 }),
+            new Paragraph({ text: "INCIDENT OVERVIEW & EVIDENCE", heading: HeadingLevel.HEADING_1 }),
             new Paragraph({
               children: [
-                new TextRun({ text: "Location: ", bold: true }),
-                new TextRun(ticket.location_description),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Action Plan: ", bold: true }),
-                new TextRun(ticket.recommended_action),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Evidence: ", bold: true }),
+                new TextRun({ text: "Evidence Summary: ", bold: true }),
                 new TextRun(ticket.evidence_summary),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Recommended Action: ", bold: true }),
+                new TextRun(ticket.recommended_action),
               ],
             }),
             new Paragraph({ text: " " }),
 
-            new Paragraph({ text: "SECTION 3: FORMAL DEMAND FOR ACTION", heading: HeadingLevel.HEADING_1 }),
             new Paragraph(
-              "Notice is hereby served to the responsible municipal agency and dispatch division regarding the hazard reported above. Prompt mitigation in accordance with public safety standards is requested."
+              "We respectfully request immediate dispatch of field personnel to inspect and remediate this condition in accordance with public safety standards."
             ),
+            new Paragraph({ text: " " }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({ children: [new TextRun({ text: "Sincerely,", size: 24 })] }),
+            new Paragraph({ children: [new TextRun({ text: "CivicLens Automated Dispatch & Citizen Telemetry System", bold: true })] }),
+            new Paragraph({ children: [new TextRun({ text: "Contact: emergency-dispatch@civiclens.local" })] }),
           ],
         },
       ],
@@ -219,8 +284,8 @@ export default function App() {
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
             ENGINE: GEMINI 3.6 FLASH
           </span>
-          <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
-            {coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
+          <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400 max-w-xs truncate">
+            {address ? `LOC: ${address}` : coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
           </span>
           <button
             type="button"
@@ -376,7 +441,7 @@ export default function App() {
     {ticket && (
       <div className="flex gap-2">
         <button
-          onClick={() => handleExportDocx(ticket, coords)}
+          onClick={() => handleExportDocx(ticket, address || coords)}
           className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded transition-all cursor-pointer"
         >
           EXPORT REQUEST LETTER (.DOCX)
