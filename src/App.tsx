@@ -11,7 +11,15 @@ interface TicketData {
   needs_immediate_dispatch: boolean;
   recommended_action: string;
   evidence_summary: string;
+  upvotes: number;
 }
+
+const deriveCategory = (desc: string): string | null => {
+  const lower = desc.toLowerCase();
+  if (/(power|voltage|cable|electric|wire|spark)/.test(lower)) return 'POWER';
+  if (/(pothole|road|pavement|street|crack|sinkhole)/.test(lower)) return 'ROAD';
+  return null;
+};
 
 let audioCtx: AudioContext | null = null;
 const getAudioContext = () => {
@@ -55,6 +63,10 @@ export default function App() {
   const [address, setAddress] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [duplicateMatch, setDuplicateMatch] = useState<TicketData | null>(null);
+  const [duplicateMatchId, setDuplicateMatchId] = useState<string | null>(null);
+  const [upvoteToast, setUpvoteToast] = useState(false);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -79,6 +91,37 @@ export default function App() {
       () => setCoords(null)
     );
   }, []);
+
+  useEffect(() => {
+    if (!description.trim()) {
+      setDuplicateMatch(null);
+      setDuplicateMatchId(null);
+      return;
+    }
+    const category = (selectedPreset || deriveCategory(description) || "").toUpperCase();
+    const locKeywords = (address || "").toLowerCase().split(/[\s,]+/).filter((w) => w.length > 3);
+    const match = history.find((item) => {
+      const issueType = item.data.issue_type.toUpperCase();
+      const issueMatch = category.length > 0 && issueType.includes(category);
+      const locMatch =
+        locKeywords.length > 0 &&
+        locKeywords.some((w) => item.data.location_description.toLowerCase().includes(w));
+      return issueMatch || locMatch;
+    });
+    if (match) {
+      setDuplicateMatch(match.data);
+      setDuplicateMatchId(match.id);
+    } else {
+      setDuplicateMatch(null);
+      setDuplicateMatchId(null);
+    }
+  }, [description, selectedPreset, history, address]);
+
+  useEffect(() => {
+    if (!upvoteToast) return;
+    const t = setTimeout(() => setUpvoteToast(false), 2500);
+    return () => clearTimeout(t);
+  }, [upvoteToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +153,7 @@ export default function App() {
         throw new Error(`Server returned status ${response.status}`);
       }
 
-      const data: TicketData = await response.json();
+      const data: TicketData = { ...(await response.json()), upvotes: 1 };
       setTicket(data);
       if (soundEnabled) playChime();
       setHistory((prev) => [
@@ -127,6 +170,24 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpvote = () => {
+    if (!duplicateMatchId) return;
+    setHistory((prev) =>
+      prev.map((item) =>
+        item.id === duplicateMatchId
+          ? { ...item, data: { ...item.data, upvotes: (item.data.upvotes || 1) + 1 } }
+          : item
+      )
+    );
+    if (soundEnabled) playBeep(660, 'sine', 0.1);
+    setUpvoteToast(true);
+    setDescription('');
+    setFile(null);
+    setSelectedPreset(null);
+    setDuplicateMatch(null);
+    setDuplicateMatchId(null);
   };
 
   const handleExportDocx = async (ticket: TicketData, locationInfo: string | null) => {
@@ -365,6 +426,7 @@ export default function App() {
                   type="button"
                   onClick={() => {
                   if (soundEnabled) playBeep(880);
+                  setSelectedPreset("POWER");
                   setDescription("CRITICAL: High-voltage cable snapped and sparking on wet road at 45th Street.");
                 }}
                   whileHover={{ scale: 1.02 }}
@@ -377,6 +439,7 @@ export default function App() {
                   type="button"
                   onClick={() => {
                   if (soundEnabled) playBeep(880);
+                  setSelectedPreset("ROAD");
                   setDescription("MODERATE: Major pothole on Main Street causing traffic slowdown near civic center.");
                 }}
                   whileHover={{ scale: 1.02 }}
@@ -388,7 +451,10 @@ export default function App() {
               </div>
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPreset(null);
+                  setDescription(e.target.value);
+                }}
                 placeholder="Describe infrastructure damage, location, or emergency context..."
                 className="w-full h-32 bg-[#060913] border border-slate-800/80 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/50 transition-all duration-300 font-mono text-slate-200"
               />
@@ -405,6 +471,45 @@ export default function App() {
             </div>
 
             {error && <div className="p-3 bg-rose-950/50 border border-rose-800 text-rose-300 text-xs rounded font-mono">{error}</div>}
+
+            {duplicateMatch && duplicateMatchId && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="p-3 bg-amber-950/50 border border-amber-700/80 rounded-lg"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-[10px] font-mono text-amber-300 tracking-widest">[⚠️ DUPLICATE HAZARD IDENTIFIED NEARBY]</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-400 mb-3">
+                  MATCHED TICKET: <span className="text-cyan-400 font-bold">{duplicateMatchId}</span> — {duplicateMatch.issue_type.toUpperCase()} · {duplicateMatch.upvotes || 1} UPVOTES
+                </div>
+                <motion.button
+                  type="button"
+                  onClick={handleUpvote}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 font-mono text-xs px-3 py-1.5 rounded transition-all cursor-pointer"
+                >
+                  +1 UPVOTE PRIORITY
+                </motion.button>
+              </motion.div>
+            )}
+
+            <AnimatePresence>
+            {upvoteToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="p-2 bg-emerald-950/50 border border-emerald-700 text-emerald-300 text-[10px] rounded font-mono text-center"
+              >
+                [✓ HAZARD PRIORITY ELEVATED]
+              </motion.div>
+            )}
+            </AnimatePresence>
 
             <motion.button
               type="submit"
@@ -450,12 +555,17 @@ export default function App() {
                     <span className="text-slate-300 text-[10px] truncate uppercase">{item.data.issue_type}</span>
                   </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                  <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800/70 shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+                    🔥 {item.data.upvotes || 1} UPVOTES
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                     item.data.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.5)]' :
                     item.data.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                   }`}>
                     {item.data.severity}
                   </span>
+                  </div>
                 </button>
               ))}
             </div>
