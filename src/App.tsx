@@ -17,6 +17,7 @@ export default function App() {
   const [ticket, setTicket] = useState<TicketData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [coords, setCoords] = useState<string | null>(null);
+  const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -58,6 +59,14 @@ export default function App() {
 
       const data: TicketData = await response.json();
       setTicket(data);
+      setHistory((prev) => [
+        {
+          id: `#TK-${Math.floor(1000 + Math.random() * 9000)}`,
+          timestamp: new Date().toLocaleTimeString('en-GB', { hour12: false }),
+          data,
+        },
+        ...prev,
+      ]);
     } catch (err: any) {
       setError(err.message || "Failed to connect to backend server.");
     } finally {
@@ -93,7 +102,8 @@ export default function App() {
       {/* Main Console Grid */}
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Console: Intake */}
-        <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+        <div className="space-y-6">
+          <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
           <h2 className="text-sm font-mono text-slate-400 mb-4 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-cyan-400" /> INCIDENT INTAKE CONSOLE
           </h2>
@@ -145,6 +155,44 @@ export default function App() {
               {loading ? "ANALYZING TELEMETRY..." : "ANALYZE & DISPATCH TICKET"}
             </button>
           </form>
+        </div>
+
+        {/* Incident History */}
+        <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+          <h2 className="text-sm font-mono text-slate-400 mb-4 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-500" /> INCIDENT HISTORY
+          </h2>
+          {history.length === 0 ? (
+            <div className="h-20 flex items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-600 font-mono text-xs">
+              NO PRIOR INCIDENTS LOGGED
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {history.map((item) => (
+                <button
+                  key={item.id + item.timestamp}
+                  type="button"
+                  onClick={() => setTicket(item.data)}
+                  className="w-full flex items-center justify-between gap-2 p-3 bg-[#090D16] hover:bg-slate-800 border border-slate-800 rounded text-left transition-all"
+                >
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-cyan-400 font-bold text-xs">{item.id}</span>
+                      <span className="text-slate-500 text-[10px]">{item.timestamp}</span>
+                    </div>
+                    <span className="text-slate-300 text-[10px] truncate uppercase">{item.data.issue_type}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                    item.data.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500' :
+                    item.data.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500'
+                  }`}>
+                    {item.data.severity}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         </div>
 
  {/* Right Console: Processed Output */}
