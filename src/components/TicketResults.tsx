@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
   AlertOctagon, AlertTriangle, CheckCircle2, MapPin, Siren,
   Code2, Radar, Copy, Check,
@@ -144,7 +145,13 @@ export default function TicketResults({ data, loading, error }: TicketResultsPro
   // --- Active / Results state ---
   const sev = severityConfig(data.severity);
 
-  const metricCards = [
+  const metricCards: Array<{
+    key: string;
+    label: string;
+    value: string;
+    Icon: LucideIcon;
+    isDispatch?: boolean;
+  }> = [
     { key: 'category', label: 'Incident Category', value: data.incident_category ?? data.issue_type ?? '—', Icon: FileText },
     {
       key: 'dispatch',
@@ -155,7 +162,7 @@ export default function TicketResults({ data, loading, error }: TicketResultsPro
     },
     { key: 'sla', label: 'Response SLA Target', value: data.response_sla ?? '—', Icon: Clock },
     { key: 'agency', label: 'Assigned Agency', value: data.required_agency ?? '—', Icon: Building2 },
-  ] as const;
+  ];
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#0F172A] p-5">
