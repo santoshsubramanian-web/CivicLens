@@ -4,6 +4,8 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
 interface TicketData {
   issue_type: string;
   severity: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
@@ -14,6 +16,7 @@ interface TicketData {
 }
 
 let audioCtx: AudioContext | null = null;
+let recognitionInstance: any = null;
 const getAudioContext = () => {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -55,6 +58,7 @@ export default function App() {
   const [address, setAddress] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -79,6 +83,35 @@ export default function App() {
       () => setCoords(null)
     );
   }, []);
+
+  const toggleSpeechToText = () => {
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported on this browser.");
+      return;
+    }
+
+    if (soundEnabled) playBeep(isListening ? 587 : 880);
+
+    if (!isListening) {
+      recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.onresult = (event: any) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setDescription((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      };
+      recognitionInstance.onend = () => setIsListening(false);
+      recognitionInstance.onerror = () => setIsListening(false);
+      setIsListening(true);
+      recognitionInstance.start();
+    } else {
+      recognitionInstance.stop();
+      setIsListening(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,6 +425,26 @@ export default function App() {
                 placeholder="Describe infrastructure damage, location, or emergency context..."
                 className="w-full h-32 bg-[#060913] border border-slate-800/80 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/50 transition-all duration-300 font-mono text-slate-200"
               />
+              <motion.button
+                type="button"
+                onClick={toggleSpeechToText}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded border text-[10px] font-mono transition-all ${
+                  isListening
+                    ? 'bg-rose-950/60 border-rose-500/60 text-rose-300 shadow-[0_0_12px_rgba(225,29,72,0.4)] animate-pulse'
+                    : 'bg-slate-800 hover:bg-slate-700/80 hover:border-cyan-500/50 border-slate-700 text-slate-300'
+                }`}
+              >
+                {isListening ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.8)]"></span>
+                    [🔴 RECORDING AUDIO...]
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">[🎙️ VOICE INPUT]</span>
+                )}
+              </motion.button>
             </div>
 
             <div>
