@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal } from 'lucide-react';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
 
 interface TicketData {
   issue_type: string;
@@ -109,6 +111,93 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportDocx = async (ticket: TicketData, coords: string | null) => {
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              text: "OFFICIAL 311 MUNICIPAL INCIDENT NOTIFICATION",
+              heading: HeadingLevel.TITLE,
+            }),
+            new Paragraph({
+              text: `Generated via CivicLens Telemetry Command Center | Date: ${new Date().toLocaleDateString()}`,
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({ text: "SECTION 1: INCIDENT TELEMETRY", heading: HeadingLevel.HEADING_1 }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 6, color: "444444" },
+                bottom: { style: BorderStyle.SINGLE, size: 6, color: "444444" },
+                left: { style: BorderStyle.SINGLE, size: 6, color: "444444" },
+                right: { style: BorderStyle.SINGLE, size: 6, color: "444444" },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph("Category")] }),
+                    new TableCell({ children: [new Paragraph(ticket.issue_type)] }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph("Severity Level")] }),
+                    new TableCell({ children: [new Paragraph(ticket.severity)] }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph("Target SLA")] }),
+                    new TableCell({ children: [new Paragraph(ticket.severity === 'CRITICAL' ? '< 30 MINS' : '< 4 HOURS')] }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph("GPS Coordinates")] }),
+                    new TableCell({ children: [new Paragraph(coords || "NOT ACQUIRED")] }),
+                  ],
+                }),
+              ],
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({ text: "SECTION 2: INCIDENT SUMMARY & ACTION PLAN", heading: HeadingLevel.HEADING_1 }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Location: ", bold: true }),
+                new TextRun(ticket.location_description),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Action Plan: ", bold: true }),
+                new TextRun(ticket.recommended_action),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Evidence: ", bold: true }),
+                new TextRun(ticket.evidence_summary),
+              ],
+            }),
+            new Paragraph({ text: " " }),
+
+            new Paragraph({ text: "SECTION 3: FORMAL DEMAND FOR ACTION", heading: HeadingLevel.HEADING_1 }),
+            new Paragraph(
+              "Notice is hereby served to the responsible municipal agency and dispatch division regarding the hazard reported above. Prompt mitigation in accordance with public safety standards is requested."
+            ),
+          ],
+        },
+      ],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `CivicLens_Request_Letter_${ticket.issue_type}_${Date.now()}.docx`);
   };
 
   return (
@@ -285,19 +374,27 @@ export default function App() {
       <AlertTriangle className="w-4 h-4 text-amber-400" /> REAL-TIME INCIDENT RESPONSE
     </h2>
     {ticket && (
-      <button
-        onClick={() => {
-          const blob = new Blob([JSON.stringify(ticket, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `civiclens-ticket-${Date.now()}.json`;
-          a.click();
-        }}
-        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-xs font-mono transition-all"
-      >
-        EXPORT JSON PAYLOAD
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleExportDocx(ticket, coords)}
+          className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded transition-all cursor-pointer"
+        >
+          EXPORT REQUEST LETTER (.DOCX)
+        </button>
+        <button
+          onClick={() => {
+            const blob = new Blob([JSON.stringify(ticket, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `civiclens-ticket-${Date.now()}.json`;
+            a.click();
+          }}
+          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-xs font-mono transition-all"
+        >
+          EXPORT JSON PAYLOAD
+        </button>
+      </div>
     )}
   </div>
 
