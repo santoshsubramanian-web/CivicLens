@@ -267,7 +267,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-slate-100 font-sans p-6">
+    <div className="min-h-screen bg-[#060913] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(6,182,212,0.15),rgba(255,255,255,0))] text-slate-100 font-sans p-6">
       {/* Telemetry Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -284,7 +284,7 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4 text-xs font-mono">
           <span className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
             SYSTEM ONLINE
           </span>
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
@@ -313,24 +313,24 @@ export default function App() {
       {/* System Status Banner */}
       <div className="mb-6 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+          <div className="flex justify-between items-center p-3 bg-[#0b1120]/80 backdrop-blur-md rounded-lg border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
             <span className="text-[10px] font-mono text-slate-500">ACTIVE TICKET QUEUE</span>
             <span className="text-sm font-mono text-cyan-400 font-bold">{history.length}</span>
           </div>
-          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+          <div className="flex justify-between items-center p-3 bg-[#0b1120]/80 backdrop-blur-md rounded-lg border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
             <span className="text-[10px] font-mono text-slate-500">SYSTEM LATENCY</span>
             <span className="text-sm font-mono text-emerald-400 font-bold">42ms</span>
           </div>
-          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+          <div className="flex justify-between items-center p-3 bg-[#0b1120]/80 backdrop-blur-md rounded-lg border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
             <span className="text-[10px] font-mono text-slate-500">API STATUS</span>
             <span className="flex items-center gap-2 text-sm font-mono text-emerald-400 font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> STABLE
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span> STABLE
             </span>
           </div>
         </div>
 
         {loading && (
-          <div className="flex items-center gap-3 p-3 bg-[#0F172A] rounded-lg border border-cyan-800">
+          <div className="flex items-center gap-3 p-3 bg-[#0b1120]/80 backdrop-blur-md rounded-lg border border-cyan-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
             <Clock className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />
             <span className="text-xs font-mono text-cyan-300 animate-pulse">
               GEMINI 3.6 FLASH: PROCESSING INGESTION PAYLOAD...
@@ -348,7 +348,7 @@ export default function App() {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="space-y-6"
         >
-          <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+          <div className="bg-[#0b1120]/80 backdrop-blur-md p-6 rounded-xl border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
           <h2 className="text-sm font-mono text-slate-400 mb-4 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-cyan-400" /> INCIDENT INTAKE CONSOLE
           </h2>
@@ -385,7 +385,7 @@ export default function App() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe infrastructure damage, location, or emergency context..."
-                className="w-full h-32 bg-[#090D16] border border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500 font-mono text-slate-200"
+                className="w-full h-32 bg-[#060913] border border-slate-800/80 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/50 transition-all duration-300 font-mono text-slate-200"
               />
             </div>
 
@@ -395,7 +395,7 @@ export default function App() {
                 type="file"
                 accept="image/*"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700 cursor-pointer"
+                className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all duration-300"
               />
             </div>
 
@@ -406,7 +406,7 @@ export default function App() {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white font-mono text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/20"
+              className="w-full py-3 bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-500 hover:from-cyan-500 hover:to-teal-400 disabled:bg-slate-800 text-slate-950 font-bold font-mono text-xs tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.4)]"
             >
               {loading ? <Clock className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {loading ? "ANALYZING TELEMETRY..." : "ANALYZE & DISPATCH TICKET"}
@@ -415,7 +415,7 @@ export default function App() {
         </div>
 
         {/* Incident History */}
-        <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+        <div className="bg-[#0b1120]/80 backdrop-blur-md p-6 rounded-xl border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
           <h2 className="text-sm font-mono text-slate-400 mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-slate-500" /> INCIDENT HISTORY
           </h2>
@@ -440,8 +440,8 @@ export default function App() {
                     <span className="text-slate-300 text-[10px] truncate uppercase">{item.data.issue_type}</span>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                    item.data.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500' :
-                    item.data.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500'
+                    item.data.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.5)]' :
+                    item.data.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                   }`}>
                     {item.data.severity}
                   </span>
@@ -457,7 +457,7 @@ export default function App() {
   initial={{ opacity: 0, x: 20 }}
   animate={{ opacity: 1, x: 0 }}
   transition={{ duration: 0.4, ease: "easeOut" }}
-  className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+  className="bg-[#0b1120]/80 backdrop-blur-md p-6 rounded-xl border border-slate-800/80 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-sm font-mono text-slate-400 flex items-center gap-2">
       <AlertTriangle className="w-4 h-4 text-amber-400" /> REAL-TIME INCIDENT RESPONSE
@@ -517,8 +517,8 @@ export default function App() {
       <div className="flex justify-between items-center p-3 bg-[#090D16] rounded border border-slate-800">
         <span className="text-slate-400">SEVERITY LEVEL:</span>
         <span className={`px-2.5 py-1 rounded text-xs font-bold ${
-          ticket.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 animate-pulse' :
-          ticket.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500'
+          ticket.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.5)]' :
+          ticket.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
         }`}>
           {ticket.severity}
         </span>
