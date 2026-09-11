@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal } from 'lucide-react';
 
 interface TicketData {
@@ -16,6 +16,18 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [ticket, setTicket] = useState<TicketData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coords, setCoords] = useState<string | null>(null);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lng = pos.coords.longitude.toFixed(4);
+        setCoords(`Lat: ${lat}, Lng: ${lng}`);
+      },
+      () => setCoords(null)
+    );
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +40,10 @@ export default function App() {
     setError(null);
 
     const formData = new FormData();
-    if (description) formData.append("description", description);
+    const payloadDescription = coords
+      ? `${description}\n\n[ATTACHED GEOLOCATION: ${coords}]`
+      : description;
+    if (description || coords) formData.append("description", payloadDescription);
     if (file) formData.append("file", file);
 
     try {
@@ -68,6 +83,9 @@ export default function App() {
           </span>
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
             ENGINE: GEMINI 3.6 FLASH
+          </span>
+          <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
+            {coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
           </span>
         </div>
       </header>
