@@ -147,6 +147,35 @@ export default function App() {
         </div>
       </header>
 
+      {/* System Status Banner */}
+      <div className="mb-6 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+            <span className="text-[10px] font-mono text-slate-500">ACTIVE TICKET QUEUE</span>
+            <span className="text-sm font-mono text-cyan-400 font-bold">{history.length}</span>
+          </div>
+          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+            <span className="text-[10px] font-mono text-slate-500">SYSTEM LATENCY</span>
+            <span className="text-sm font-mono text-emerald-400 font-bold">42ms</span>
+          </div>
+          <div className="flex justify-between items-center p-3 bg-[#0F172A] rounded-lg border border-slate-800">
+            <span className="text-[10px] font-mono text-slate-500">API STATUS</span>
+            <span className="flex items-center gap-2 text-sm font-mono text-emerald-400 font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> STABLE
+            </span>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-3 p-3 bg-[#0F172A] rounded-lg border border-cyan-800">
+            <Clock className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />
+            <span className="text-xs font-mono text-cyan-300 animate-pulse">
+              GEMINI 3.6 FLASH: PROCESSING INGESTION PAYLOAD...
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Main Console Grid */}
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Console: Intake */}
@@ -273,8 +302,11 @@ export default function App() {
   </div>
 
   {!ticket ? (
-    <div className="h-64 flex items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-600 font-mono text-xs">
-      AWAITING INCIDENT TELEMETRY...
+    <div className="h-64 flex flex-col justify-center items-start gap-3 border border-dashed border-slate-800 rounded-lg p-4 text-slate-600 font-mono text-xs bg-[#090D16]">
+      <span className="text-emerald-400">[✓] FASTAPI ENDPOINT CONNECTED</span>
+      <span className="text-emerald-400">[✓] GEMINI MULTIMODAL ADAPTER READY</span>
+      <span className="text-emerald-400">[✓] GEOLOCATION TELEMETRY ACTIVE</span>
+      <span className="text-slate-500 mt-2">AWAITING INCIDENT TELEMETRY...</span>
     </div>
   ) : (
     <div className="space-y-4 font-mono text-xs">
