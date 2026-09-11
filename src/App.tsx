@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal, FileText, FileJson } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -16,7 +16,6 @@ interface TicketData {
 }
 
 let audioCtx: AudioContext | null = null;
-let recognitionInstance: any = null;
 const getAudioContext = () => {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -59,6 +58,10 @@ export default function App() {
   const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
+  const [speechStatus, setSpeechStatus] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef("");
+  const baseDescriptionRef = useRef("");
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -84,33 +87,71 @@ export default function App() {
     );
   }, []);
 
+  useEffect(() => {
+    if (!speechStatus) return;
+    const t = setTimeout(() => setSpeechStatus(null), 5000);
+    return () => clearTimeout(t);
+  }, [speechStatus]);
+
   const toggleSpeechToText = () => {
     if (!SpeechRecognition) {
       alert("Speech Recognition is not supported on this browser.");
       return;
     }
 
-    if (soundEnabled) playBeep(isListening ? 587 : 880);
-
-    if (!isListening) {
-      recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.onresult = (event: any) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setDescription((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      };
-      recognitionInstance.onend = () => setIsListening(false);
-      recognitionInstance.onerror = () => setIsListening(false);
-      setIsListening(true);
-      recognitionInstance.start();
-    } else {
-      recognitionInstance.stop();
+    if (isListening) {
+      recognitionRef.current?.stop();
       setIsListening(false);
+      setSpeechStatus(null);
+      if (soundEnabled) playBeep(587);
+      return;
     }
+
+    setSpeechStatus(null);
+    if (soundEnabled) playBeep(880);
+    baseDescriptionRef.current = description.trim();
+    finalTranscriptRef.current = "";
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          finalTranscriptRef.current += item[0].transcript + " ";
+        } else {
+          interimTranscript += item[0].transcript;
+        }
+      }
+      const prefix = finalTranscriptRef.current + interimTranscript;
+      setDescription([baseDescriptionRef.current, prefix.trim()].filter(Boolean).join(" "));
+    };
+
+    recognition.onend = () => {
+      const prefix = finalTranscriptRef.current;
+      setDescription([baseDescriptionRef.current, prefix.trim()].filter(Boolean).join(" "));
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error) {
+        const blocked = event.error === 'not-allowed' || event.error === 'service-not-allowed';
+        setSpeechStatus(
+          blocked
+            ? 'MICROPHONE ACCESS BLOCKED — GRANT PERMISSION TO ENABLE VOICE TELEMETRY.'
+            : `SPEECH RECOGNITION ERROR: ${String(event.error).toUpperCase()}`
+        );
+        if (soundEnabled) playBeep(220, 'sine', 0.2);
+      }
+      setIsListening(false);
+    };
+
+    setIsListening(true);
+    recognition.start();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -445,6 +486,49 @@ export default function App() {
                   <span className="flex items-center gap-2">[🎙️ VOICE INPUT]</span>
                 )}
               </motion.button>
+
+              {speechStatus && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="mt-2 p-2 bg-amber-950/60 border border-amber-700 text-amber-300 text-[10px] rounded font-mono"
+                >
+                  ⚠️ {speechStatus}
+                </motion.div>
+              )}
+
+              <AnimatePresence>
+              {isListening && (
+                <motion.div
+                  key="spectrogram"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 p-3 bg-[#090D16] rounded border border-rose-500/40 overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.8)]"></span>
+                    <span className="text-[10px] font-mono text-rose-300 tracking-widest">[🔴 LIVE TELEMETRY STREAMING...]</span>
+                  </div>
+                  <div className="h-6 flex items-center justify-center gap-1.5">
+                    {[22, 34, 16, 40, 26, 46, 18, 30, 14, 36].map((peak, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ height: ['4px', `${peak}px`, '10px', `${peak * 0.75}px`, '4px'] }}
+                        transition={{
+                          duration: 0.8 + (i % 4) * 0.14,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          delay: i * 0.04,
+                        }}
+                        className="w-1.5 bg-gradient-to-t from-rose-600 via-rose-400 to-amber-300 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+              </AnimatePresence>
             </div>
 
             <div>
