@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TicketData {
   issue_type: string;
@@ -268,6 +269,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#090D16] text-slate-100 font-sans p-6">
       {/* Telemetry Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
       <header className="flex justify-between items-center pb-6 border-b border-slate-800 mb-6">
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-cyan-400" />
@@ -287,9 +293,11 @@ export default function App() {
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400 max-w-xs truncate">
             {address ? `LOC: ${address}` : coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
           </span>
-          <button
+          <motion.button
             type="button"
             onClick={() => setSoundEnabled((prev) => !prev)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className={`px-3 py-1.5 rounded border transition-all ${
               soundEnabled
                 ? 'bg-slate-900 border-slate-800 text-cyan-400 hover:border-cyan-700'
@@ -297,9 +305,10 @@ export default function App() {
             }`}
           >
             AUDIO: {soundEnabled ? 'ON' : 'OFF'}
-          </button>
+          </motion.button>
         </div>
       </header>
+      </motion.div>
 
       {/* System Status Banner */}
       <div className="mb-6 space-y-3">
@@ -333,7 +342,12 @@ export default function App() {
       {/* Main Console Grid */}
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Console: Intake */}
-        <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="space-y-6"
+        >
           <div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
           <h2 className="text-sm font-mono text-slate-400 mb-4 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-cyan-400" /> INCIDENT INTAKE CONSOLE
@@ -342,26 +356,30 @@ export default function App() {
             <div>
               <label className="block text-xs font-mono text-slate-400 mb-2">FIELD REPORT / TELEMETRY LOG</label>
               <div className="flex gap-2 mb-2">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => {
                   if (soundEnabled) playBeep(880);
                   setDescription("CRITICAL: High-voltage cable snapped and sparking on wet road at 45th Street.");
                 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Power Hazard
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   type="button"
                   onClick={() => {
                   if (soundEnabled) playBeep(880);
                   setDescription("MODERATE: Major pothole on Main Street causing traffic slowdown near civic center.");
                 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Road Damage
-                </button>
+                </motion.button>
               </div>
               <textarea
                 value={description}
@@ -383,14 +401,16 @@ export default function App() {
 
             {error && <div className="p-3 bg-rose-950/50 border border-rose-800 text-rose-300 text-xs rounded font-mono">{error}</div>}
 
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white font-mono text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/20"
             >
               {loading ? <Clock className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {loading ? "ANALYZING TELEMETRY..." : "ANALYZE & DISPATCH TICKET"}
-            </button>
+            </motion.button>
           </form>
         </div>
 
@@ -430,23 +450,29 @@ export default function App() {
             </div>
           )}
         </div>
-        </div>
+        </motion.div>
 
  {/* Right Console: Processed Output */}
-<div className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
+<motion.div
+  initial={{ opacity: 0, x: 20 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.4, ease: "easeOut" }}
+  className="bg-[#0F172A] p-6 rounded-xl border border-slate-800 shadow-xl">
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-sm font-mono text-slate-400 flex items-center gap-2">
       <AlertTriangle className="w-4 h-4 text-amber-400" /> REAL-TIME INCIDENT RESPONSE
     </h2>
     {ticket && (
       <div className="flex gap-2">
-        <button
+        <motion.button
           onClick={() => handleExportDocx(ticket, address || coords)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded transition-all cursor-pointer"
         >
           EXPORT REQUEST LETTER (.DOCX)
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={() => {
             const blob = new Blob([JSON.stringify(ticket, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -455,23 +481,39 @@ export default function App() {
             a.download = `civiclens-ticket-${Date.now()}.json`;
             a.click();
           }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-xs font-mono transition-all"
         >
           EXPORT JSON PAYLOAD
-        </button>
+        </motion.button>
       </div>
     )}
   </div>
 
+  <AnimatePresence mode="wait">
   {!ticket ? (
-    <div className="h-64 flex flex-col justify-center items-start gap-3 border border-dashed border-slate-800 rounded-lg p-4 text-slate-600 font-mono text-xs bg-[#090D16]">
+    <motion.div
+      key="empty"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="h-64 flex flex-col justify-center items-start gap-3 border border-dashed border-slate-800 rounded-lg p-4 text-slate-600 font-mono text-xs bg-[#090D16]"
+    >
       <span className="text-emerald-400">[✓] FASTAPI ENDPOINT CONNECTED</span>
       <span className="text-emerald-400">[✓] GEMINI MULTIMODAL ADAPTER READY</span>
       <span className="text-emerald-400">[✓] GEOLOCATION TELEMETRY ACTIVE</span>
       <span className="text-slate-500 mt-2">AWAITING INCIDENT TELEMETRY...</span>
-    </div>
+    </motion.div>
   ) : (
-    <div className="space-y-4 font-mono text-xs">
+    <motion.div
+      key={`${ticket.issue_type}-${ticket.severity}-${ticket.location_description}-${ticket.recommended_action}-${ticket.evidence_summary}`}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="space-y-4 font-mono text-xs"
+    >
       <div className="flex justify-between items-center p-3 bg-[#090D16] rounded border border-slate-800">
         <span className="text-slate-400">SEVERITY LEVEL:</span>
         <span className={`px-2.5 py-1 rounded text-xs font-bold ${
@@ -515,8 +557,9 @@ export default function App() {
         <div className="text-slate-500 text-[10px] mb-1">EVIDENCE SUMMARY</div>
         <div className="text-slate-400">{ticket.evidence_summary}</div>
       </div>
-    </div>
+    </motion.div>
   )}
-</div>
+</AnimatePresence>
+</motion.div>
 </main>
 </div>)}
