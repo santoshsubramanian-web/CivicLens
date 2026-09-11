@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Upload, Send, Terminal, FileText, FileJson } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -274,7 +274,8 @@ export default function App() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-      <header className="flex justify-between items-center pb-6 border-b border-slate-800 mb-6">
+      <header className="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-800 mb-6">
+        {/* Branding */}
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-cyan-400" />
           <div>
@@ -282,17 +283,21 @@ export default function App() {
             <p className="text-xs text-slate-400 font-mono">311 DISPATCH COMMAND CENTER</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-xs font-mono">
+        {/* Live Status Indicators */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <span className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
             SYSTEM ONLINE
           </span>
+          <span className="text-slate-700 select-none">|</span>
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
             ENGINE: GEMINI 3.6 FLASH
           </span>
+          <span className="text-slate-700 select-none">|</span>
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400 max-w-xs truncate">
             {address ? `LOC: ${address}` : coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
           </span>
+          <span className="text-slate-700 select-none">|</span>
           <motion.button
             type="button"
             onClick={() => setSoundEnabled((prev) => !prev)}
@@ -354,8 +359,8 @@ export default function App() {
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono text-slate-400 mb-2">FIELD REPORT / TELEMETRY LOG</label>
-              <div className="flex gap-2 mb-2">
+              <label className="block text-[10px] font-mono text-cyan-400/80 mb-2 tracking-widest">01 // INCIDENT DESCRIPTION</label>
+              <div className="flex gap-2 mb-2 flex-wrap">
                 <motion.button
                   type="button"
                   onClick={() => {
@@ -364,7 +369,7 @@ export default function App() {
                 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700/80 hover:border-cyan-500/50 hover:shadow-[0_0_10px_rgba(6,182,212,0.2)] text-cyan-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Power Hazard
                 </motion.button>
@@ -376,7 +381,7 @@ export default function App() {
                 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700/80 hover:border-amber-500/50 hover:shadow-[0_0_10px_rgba(245,158,11,0.2)] text-amber-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Road Damage
                 </motion.button>
@@ -390,7 +395,7 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-400 mb-2">VISUAL EVIDENCE UPLOAD</label>
+              <label className="block text-[10px] font-mono text-cyan-400/80 mb-2 tracking-widest">02 // VISUAL EVIDENCE INGEST</label>
               <input
                 type="file"
                 accept="image/*"
@@ -430,14 +435,20 @@ export default function App() {
                   key={item.id + item.timestamp}
                   type="button"
                   onClick={() => setTicket(item.data)}
-                  className="w-full flex items-center justify-between gap-2 p-3 bg-[#090D16] hover:bg-slate-800 border border-slate-800 rounded text-left transition-all"
+                  className="w-full flex items-center justify-between gap-2 p-3 bg-[#090D16] hover:bg-slate-800/60 hover:border-cyan-500/30 transition-all cursor-pointer border border-slate-800 rounded text-left"
                 >
-                  <div className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      item.data.severity === 'CRITICAL' ? 'bg-rose-500 shadow-[0_0_6px_rgba(225,29,72,0.8)]' :
+                      item.data.severity === 'HIGH' ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]' : 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                    }`} />
+                    <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-cyan-400 font-bold text-xs">{item.id}</span>
                       <span className="text-slate-500 text-[10px]">{item.timestamp}</span>
                     </div>
                     <span className="text-slate-300 text-[10px] truncate uppercase">{item.data.issue_type}</span>
+                  </div>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
                     item.data.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.5)]' :
@@ -468,9 +479,9 @@ export default function App() {
           onClick={() => handleExportDocx(ticket, address || coords)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded transition-all cursor-pointer"
+          className="flex items-center gap-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-mono px-3 py-1 rounded transition-all cursor-pointer"
         >
-          EXPORT REQUEST LETTER (.DOCX)
+          <FileText className="w-3.5 h-3.5" /> EXPORT REQUEST LETTER (.DOCX)
         </motion.button>
         <motion.button
           onClick={() => {
@@ -483,9 +494,9 @@ export default function App() {
           }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-xs font-mono transition-all"
+          className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700/80 hover:border-cyan-500/50 text-cyan-400 border border-slate-700 rounded text-xs font-mono transition-all"
         >
-          EXPORT JSON PAYLOAD
+          <FileJson className="w-3.5 h-3.5" /> EXPORT JSON PAYLOAD
         </motion.button>
       </div>
     )}
@@ -512,19 +523,24 @@ export default function App() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="space-y-4 font-mono text-xs"
+      className="space-y-5 font-mono text-xs"
     >
-      <div className="flex justify-between items-center p-3 bg-[#090D16] rounded border border-slate-800">
-        <span className="text-slate-400">SEVERITY LEVEL:</span>
-        <span className={`px-2.5 py-1 rounded text-xs font-bold ${
-          ticket.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.5)]' :
-          ticket.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+      <div className="flex items-center justify-between gap-3 p-4 bg-[#090D16] rounded border border-slate-800/80">
+        <div>
+          <div className="text-slate-500 text-[10px] tracking-widest">INCIDENT SEVERITY CLASSIFICATION</div>
+          <div className="text-slate-200 font-bold mt-0.5 text-sm uppercase tracking-wider">Threat Level</div>
+        </div>
+        <span className={`px-4 py-2 rounded text-sm font-bold tracking-widest ${
+          ticket.severity === 'CRITICAL' ? 'bg-rose-900/80 text-rose-200 border border-rose-500 animate-pulse shadow-[0_0_12px_rgba(225,29,72,0.7)]' :
+          ticket.severity === 'HIGH' ? 'bg-amber-900/80 text-amber-200 border border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)]' : 'bg-emerald-900/80 text-emerald-200 border border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.7)]'
         }`}>
           {ticket.severity}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div>
+        <h3 className="text-[10px] font-mono text-slate-500 mb-2 tracking-widest">INCIDENT SPECS</h3>
+        <div className="grid grid-cols-3 gap-3">
         <div className="p-3 bg-[#090D16] rounded border border-slate-800">
           <div className="text-slate-500 text-[10px]">CATEGORY</div>
           <div className="text-slate-200 font-bold mt-1 uppercase">{ticket.issue_type}</div>
@@ -541,21 +557,28 @@ export default function App() {
             {ticket.severity === 'CRITICAL' ? '< 30 MINS' : '< 4 HOURS'}
           </div>
         </div>
+        </div>
       </div>
 
-      <div className="p-3 bg-[#090D16] rounded border border-slate-800">
-        <div className="text-slate-500 text-[10px] mb-1">LOCATION SUMMARY</div>
+      <div>
+        <h3 className="text-[10px] font-mono text-slate-500 mb-2 tracking-widest">LOCATION / GEOGRAPHIC FIX</h3>
+        <div className="p-3 bg-[#090D16] rounded border border-slate-800">
         <div className="text-slate-300">{ticket.location_description}</div>
+        </div>
       </div>
 
-      <div className="p-3 bg-[#090D16] rounded border border-slate-800">
-        <div className="text-slate-500 text-[10px] mb-1">ACTION PLAN</div>
+      <div>
+        <h3 className="text-[10px] font-mono text-cyan-400 mb-2 tracking-widest">RT // ACTION PLAN</h3>
+        <div className="p-3 bg-[#090D16] rounded border border-cyan-900/60">
         <div className="text-cyan-300">{ticket.recommended_action}</div>
+        </div>
       </div>
 
-      <div className="p-3 bg-[#090D16] rounded border border-slate-800">
-        <div className="text-slate-500 text-[10px] mb-1">EVIDENCE SUMMARY</div>
+      <div>
+        <h3 className="text-[10px] font-mono text-slate-500 mb-2 tracking-widest">FORMAL EVIDENCE SUMMARY</h3>
+        <div className="p-3 bg-[#090D16] rounded border border-slate-800">
         <div className="text-slate-400">{ticket.evidence_summary}</div>
+        </div>
       </div>
     </motion.div>
   )}
