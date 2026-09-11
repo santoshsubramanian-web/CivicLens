@@ -10,6 +10,38 @@ interface TicketData {
   evidence_summary: string;
 }
 
+let audioCtx: AudioContext | null = null;
+const getAudioContext = () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return audioCtx;
+};
+
+const playBeep = (freq = 880, type: OscillatorType = 'sine', duration = 0.08) => {
+  try {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch {
+    // ignore audio failures
+  }
+};
+
+const playChime = () => {
+  playBeep(587, 'sine', 0.12);
+  setTimeout(() => playBeep(880, 'sine', 0.14), 120);
+};
+
 export default function App() {
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +50,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [coords, setCoords] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; timestamp: string; data: TicketData }>>([]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -33,10 +66,12 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description && !file) {
+      if (soundEnabled) playBeep(220, 'sine', 0.15);
       setError("Please provide an issue description or upload an image.");
       return;
     }
 
+    if (soundEnabled) playBeep(880);
     setLoading(true);
     setError(null);
 
@@ -59,6 +94,7 @@ export default function App() {
 
       const data: TicketData = await response.json();
       setTicket(data);
+      if (soundEnabled) playChime();
       setHistory((prev) => [
         {
           id: `#TK-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -68,6 +104,7 @@ export default function App() {
         ...prev,
       ]);
     } catch (err: any) {
+      if (soundEnabled) playBeep(220, 'sine', 0.2);
       setError(err.message || "Failed to connect to backend server.");
     } finally {
       setLoading(false);
@@ -96,6 +133,17 @@ export default function App() {
           <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800 text-slate-400">
             {coords ? `GPS: [${coords}]` : 'GPS: [ACQUIRING...]'}
           </span>
+          <button
+            type="button"
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            className={`px-3 py-1.5 rounded border transition-all ${
+              soundEnabled
+                ? 'bg-slate-900 border-slate-800 text-cyan-400 hover:border-cyan-700'
+                : 'bg-slate-900 border-slate-800 text-slate-600 hover:border-slate-600'
+            }`}
+          >
+            AUDIO: {soundEnabled ? 'ON' : 'OFF'}
+          </button>
         </div>
       </header>
 
@@ -113,14 +161,20 @@ export default function App() {
               <div className="flex gap-2 mb-2">
                 <button
                   type="button"
-                  onClick={() => setDescription("CRITICAL: High-voltage cable snapped and sparking on wet road at 45th Street.")}
+                  onClick={() => {
+                  if (soundEnabled) playBeep(880);
+                  setDescription("CRITICAL: High-voltage cable snapped and sparking on wet road at 45th Street.");
+                }}
                   className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Power Hazard
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDescription("MODERATE: Major pothole on Main Street causing traffic slowdown near civic center.")}
+                  onClick={() => {
+                  if (soundEnabled) playBeep(880);
+                  setDescription("MODERATE: Major pothole on Main Street causing traffic slowdown near civic center.");
+                }}
                   className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded text-[10px] font-mono transition-all"
                 >
                   + Preset: Road Damage
